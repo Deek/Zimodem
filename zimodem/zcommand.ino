@@ -1,3 +1,4 @@
+// CoCoWiFi mods by Allen C. Huffman and Jeff Teunissen
 /*
    Copyright 2016-2019 Bo Zimmerman
 
@@ -1202,6 +1203,10 @@ ZResult ZCommand::doUpdateFirmware(int vval, uint8_t *vbuf, int vlen, bool isNum
 
   uint8_t buf[255];
   int bufSize = 254;
+#ifdef COCOWIFI
+  if((!doWebGetBytes(UPDATE_URL, 80, VERSION_FILE, false, buf, &bufSize))||(bufSize<=0))
+    return ZERROR;
+#else // ! COCOWIFI
 #ifdef ZIMODEM_ESP32
   if((!doWebGetBytes("www.zimmers.net", 80, "/otherprojs/guru-latest-version.txt", false, buf, &bufSize))||(bufSize<=0))
     return ZERROR;
@@ -1209,6 +1214,7 @@ ZResult ZCommand::doUpdateFirmware(int vval, uint8_t *vbuf, int vlen, bool isNum
   if((!doWebGetBytes("www.zimmers.net", 80, "/otherprojs/c64net-latest-version.txt", false, buf, &bufSize))||(bufSize<=0))
     return ZERROR;
 #endif
+#endif // ! COCOWIFI
 
   if((!isNumber)&&(vlen>2))
   {
@@ -1251,13 +1257,21 @@ ZResult ZCommand::doUpdateFirmware(int vval, uint8_t *vbuf, int vlen, bool isNum
   serial.printf("Updating to %s, wait for modem restart...",buf);
   serial.flush();
   char firmwareName[100];
+#ifdef COCOWIFI
+  sprintf(firmwareName,UPDATE_FILE,buf);
+#else // ! COCOWIFI
 #ifdef ZIMODEM_ESP32
   sprintf(firmwareName,"/otherprojs/guru-firmware-%s.bin",buf);
 #else
   sprintf(firmwareName,"/otherprojs/c64net-firmware-%s.bin",buf);
 #endif
+#endif // ! COCOWIFI
   uint32_t respLength=0;
+#ifdef COCOWIFI
+  WiFiClient *c = doWebGetStream(UPDATE_URL, 80, firmwareName, false, &respLength); 
+#else // ! COCOWIFI
   WiFiClient *c = doWebGetStream("www.zimmers.net", 80, firmwareName, false, &respLength); 
+#endif // ! COCOWIFI
   if(c==null)
   {
     serial.prints(EOLN);
@@ -3004,6 +3018,10 @@ void ZCommand::showInitMessage()
   //serial.prints(compile_date);
   //serial.prints(")");
   serial.prints(commandMode.EOLN);
+#ifdef COCOWIFI
+  serial.prints("(CoCoWiFi)");
+  serial.prints(commandMode.EOLN);
+#endif // COCOWIFI
   char s[100];
 #ifdef ZIMODEM_ESP32
   sprintf(s,"sdk=%s chipid=%d cpu@%d",ESP.getSdkVersion(),ESP.getChipRevision(),ESP.getCpuFreqMHz());
@@ -3592,4 +3610,3 @@ void ZCommand::loop()
   }
   checkBaudChange();
 }
-

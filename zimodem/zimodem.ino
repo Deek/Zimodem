@@ -1,3 +1,5 @@
+// CoCoWiFi changes by Allen C. Huffman and Jeff Teunissen
+#define COCOWIFI
 /*
    Copyright 2016-2019 Bo Zimmerman
 
@@ -33,9 +35,29 @@ const char compile_date[] = __DATE__ " " __TIME__;
 # define ZIMODEM_ESP32
 #elif defined(ARDUINO_QUANTUM)
 # define ZIMODEM_ESP32
+#elif defined(ARDUINO_NodeMCU_32S)
+# define ZIMODEM_ESP32
+# define BOARD_NAME "nodemcu-32s"
+#elif defined(ARDUINO_ESP8266_NODEMCU) \
+  || defined(ARDUINO_ESP8266_NODEMCU_ESP12) \
+  || defined(ARDUINO_ESP8266_NODEMCU_ESP12E)
+# define ZIMODEM_ESP8266
+# define BOARD_NAME "nodemcu"
 #else
 # define ZIMODEM_ESP8266
+# define BOARD_NAME "generic"
 #endif
+
+#ifdef COCOWIFI
+# ifndef BOARD_NAME
+#  warning "CoCoWifi not configured for this board yet. You may have trouble."
+#  define BOARD_NAME "generic"
+# endif
+
+# define UPDATE_URL "www.subethasoftware.com"
+# define UPDATE_FILE  "/files/zimodem/zmodem.ino." BOARD_NAME "-%s.bin"
+# define VERSION_FILE "/files/zimodem/zimodem-latest-version.txt"
+#endif // COCOWIFI
 
 #ifdef SUPPORT_LED_PINS
 # ifdef GPIO_NUM_0
@@ -92,8 +114,13 @@ const char compile_date[] = __DATE__ " " __TIME__;
 # define DEFAULT_PIN_RTS 4
 # define DEFAULT_PIN_CTS 5 // is 0 for ESP-01, see getDefaultCtsPin() below.
 # define DEFAULT_PIN_DCD 2
-# define DEFAULT_FCT FCT_RTSCTS
-# define RS232_INVERTED 1
+# ifdef COCOWIFI
+#  define DEFAULT_FCT FCT_DISABLED
+#  undef RS232_INVERTED
+# else // not CoCoWiFi
+#  define DEFAULT_FCT FCT_RTSCTS
+#  define RS232_INVERTED 1
+# endif
 # define debugPrintf doNothing
 # define preEOLN(...)
 # define echoEOLN(...) serial.prints(EOLN)
